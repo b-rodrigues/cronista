@@ -14,15 +14,15 @@ let
       ;
   };
 
-  talvez = pkgs.python3.buildPythonPackage rec {
+  talvez = pkgs.python313.buildPythonPackage rec {
       pname = "talvez";
       version = "0.0.9";
       pyproject = true;
 
-      src = pkgs.fetchFromGithub {
+      src = pkgs.fetchFromGitHub {
         owner = "b-rodrigues";
         repo = "talvez";
-        tag = "v${version}";
+        rev = "v${version}";
        sha256 = "";
     };
   };
