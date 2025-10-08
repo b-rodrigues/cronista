@@ -15,11 +15,9 @@ let
   };
 
   talvez = pkgs.python3Packages.buildPythonPackage {
-    pname = "talvez";
-    version = "0.0.9";
-
     src = pkgs.fetchPypi {
-      inherit pname version;
+      pname = "talvez";
+      version = "0.0.9";
       sha256 = "";
     };
   };
