@@ -23,7 +23,7 @@ let
         owner = "b-rodrigues";
         repo = "talvez";
         rev = "v${version}";
-       sha256 = "";
+       sha256 = "sha256-Jrd8FQ8X7ThDayR1+r6lRbosrf1qtLdcbcO5LcFOyaI=";
     };
   };
 
