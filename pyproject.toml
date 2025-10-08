@@ -1,0 +1,33 @@
+[project]
+name = "cronista"
+version = "0.0.1"
+description = "Record function calls with composable logs and Maybe results (cronista: a Python port of chronicler)"
+readme = "README.md"
+keywords = ["logging", "pipeline", "maybe", "functional programming", "reproducibility"]
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
+  "Operating System :: OS Independent",
+]
+requires-python = ">=3.8"
+license = { text = "GPL-3.0-or-later" }
+authors = [
+  { name = "Bruno Rodrigues" }
+]
+dependencies = [
+  "talvez>=0.0.9",
+]
+
+[project.urls]
+Homepage = "https://github.com/b-rodrigues/cronista"
+"Bug Tracker" = "https://github.com/b-rodrigues/cronista/issues"
+
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
