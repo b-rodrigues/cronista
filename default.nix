@@ -25,7 +25,7 @@ let
         rev = "v${version}";
        sha256 = "sha256-Jrd8FQ8X7ThDayR1+r6lRbosrf1qtLdcbcO5LcFOyaI=";
     };
-      build-system = [ pkgs.setuptools ];
+    build-system = [ pkgs.python313Packages.setuptools ];
   };
 
   rpkgs = builtins.attrValues {
