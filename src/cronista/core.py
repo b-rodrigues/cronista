@@ -73,7 +73,7 @@ class Chronicle:
         )
 
     def is_ok(self) -> bool:
-        return hasattr(self.value, "is_just") and self.value.is_just()
+        return hasattr(self.value, "is_just") and self.value.is_just
 
     def read_log(self) -> List[str]:
         return list(self._lines)
@@ -132,7 +132,7 @@ def unveil(c: Chronicle, what: str = "value") -> Any:
     unveil(chronicle, "lines") -> printable log lines
     """
     if what == "value":
-        return c.value.value if hasattr(c.value, "is_just") and c.value.is_just() else None
+        return c.value.value if hasattr(c.value, "is_just") and c.value.is_just else None
     elif what == "log_df":
         return c.log_df
     elif what == "lines":
