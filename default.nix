@@ -14,7 +14,7 @@ let
       ;
   };
 
-  talvez = pkgs.buildPythonPackage rec {
+  talvez = pkgs.python3.buildPythonPackage rec {
       pname = "talvez";
       version = "0.0.9";
       pyproject = true;
