@@ -14,11 +14,16 @@ let
       ;
   };
 
-  talvez = pkgs.python3Packages.buildPythonPackage {
-    src = pkgs.fetchPypi {
+  talvez = pkgs.buildPythonPackage rec {
       pname = "talvez";
       version = "0.0.9";
-      sha256 = "";
+      pyproject = true;
+
+      src = pkgs.fetchFromGithub {
+        owner = "b-rodrigues";
+        repo = "talvez";
+        tag = "v${version}";
+       sha256 = "";
     };
   };
 
