@@ -14,6 +14,16 @@ let
       ;
   };
 
+  talvez = pkgs.python3Packages.buildPythonPackage {
+    pname = "talvez";
+    version = "0.0.9";
+
+    src = pkgs.fetchPypi {
+      inherit pname version;
+      sha256 = "";
+    };
+  };
+
   rpkgs = builtins.attrValues {
     inherit (pkgs.rPackages) 
       maybe
@@ -44,7 +54,7 @@ pkgs.mkShell {
    LC_MEASUREMENT = "en_US.UTF-8";
    RETICULATE_PYTHON = "${pkgs.python313}/bin/python";
 
-  buildInputs = [ rpkgs pypkgs system_packages ];
+  buildInputs = [ rpkgs pypkgs talvez system_packages ];
 
   shellHook = ''
     export PYTHONPATH=$PWD/src:$PYTHONPATH
