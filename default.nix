@@ -11,21 +11,8 @@ let
       mkdocstrings-python
       numpy
       pytest
+      talvez
       ;
-  };
-
-  talvez = pkgs.python313Packages.buildPythonPackage rec {
-      pname = "talvez";
-      version = "0.0.9";
-      pyproject = true;
-
-      src = pkgs.fetchFromGitHub {
-        owner = "b-rodrigues";
-        repo = "talvez";
-        rev = "v${version}";
-       sha256 = "sha256-Jrd8FQ8X7ThDayR1+r6lRbosrf1qtLdcbcO5LcFOyaI=";
-    };
-    build-system = [ pkgs.python313Packages.setuptools ];
   };
 
   rpkgs = builtins.attrValues {
@@ -58,7 +45,7 @@ pkgs.mkShell {
    LC_MEASUREMENT = "en_US.UTF-8";
    RETICULATE_PYTHON = "${pkgs.python313}/bin/python";
 
-  buildInputs = [ rpkgs pypkgs talvez system_packages ];
+  buildInputs = [ rpkgs pypkgs system_packages ];
 
   shellHook = ''
     export PYTHONPATH=$PWD/src:$PYTHONPATH
