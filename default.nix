@@ -1,5 +1,5 @@
 let
- pkgs = import (fetchTarball "https://github.com/rstats-on-nix/nixpkgs/archive/2025-10-07.tar.gz") {};
+ pkgs = import (fetchTarball "https://github.com/rstats-on-nix/nixpkgs/archive/2025-10-08.tar.gz") {};
  
   pypkgs = builtins.attrValues {
     inherit (pkgs.python313Packages) 
