@@ -18,6 +18,9 @@ dependencies = [
   "talvez>=0.0.9",
 ]
 
+[project.optional-dependencies]
+pandas = ["pandas>=2.0"]
+
 [project.urls]
 Homepage = "https://github.com/b-rodrigues/cronista"
 "Bug Tracker" = "https://github.com/b-rodrigues/cronista/issues"
