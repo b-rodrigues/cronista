@@ -1,6 +1,6 @@
 [project]
 name = "cronista"
-version = "0.0.2"
+version = "0.0.3"
 description = "Record function calls with composable logs and Maybe results (cronista: a Python port of chronicler)"
 readme = "README.md"
 keywords = ["logging", "pipeline", "maybe", "functional programming", "reproducibility"]
