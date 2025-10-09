@@ -9,6 +9,14 @@ from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 from talvez import just, nothing
 
+# Optional pandas support for table output
+try:
+    import pandas as _pd  # type: ignore
+    _PANDAS_AVAILABLE = True
+except Exception:
+    _pd = None
+    _PANDAS_AVAILABLE = False
+
 Outcome = str  # "OK! Success" or "NOK! Failure"
 
 def _now_iso() -> str:
@@ -57,14 +65,12 @@ class Chronicle:
     ) -> None:
         self.value = value               # Maybe
         self.log_df = log_df or []       # list of dict rows
-        self._lines = lines or []        # printable log lines
+        self._lines = lines or []        # per-step lines (no "Total")
 
     def __repr__(self) -> str:
         ok = self.is_ok()
         header = "OK! Value computed successfully:" if ok else "NOK! Value computed unsuccessfully:"
-        maybe_str = _safe_repr(self.value)
         body = f"Just({_safe_repr(self.value.value)})" if ok else "Nothing"
-        # Mirror chronicler's two-part print: value then hint
         return (
             f"{header}\n---------------\n{body}\n\n---------------\n"
             "This is an object of type `chronicle`.\n"
@@ -75,19 +81,14 @@ class Chronicle:
     def is_ok(self) -> bool:
         return hasattr(self.value, "is_just") and self.value.is_just
 
-    def read_log(self) -> List[str]:
-        return list(self._lines)
-
     def bind_record(self, rfunc: "RecordedFunction", *args, **kwargs) -> "Chronicle":
         """
         Chain another recorded function, composing logs. If current value is Nothing,
         short-circuit and append a NOK log entry for rfunc without executing it.
         """
-        # Determine next op number
         next_op = len(self.log_df) + 1
 
         if not self.is_ok():
-            # Short-circuit: add NOK entry explaining propagation
             fn_label = rfunc.fn_label
             started_at = _now_iso()
             line = _format_log_line(False, fn_label, started_at, 0.0)
@@ -103,25 +104,30 @@ class Chronicle:
                 "diff_obj": None,
                 "lag_outcome": self.log_df[-1]["outcome"] if self.log_df else None,
             }
-            out = Chronicle(value=self.value, log_df=self.log_df + [new_row], lines=self._lines + [line])
+            out = Chronicle(
+                value=self.value,
+                log_df=self.log_df + [new_row],
+                lines=self._lines + [line],  # compose raw per-step lines
+            )
             return out
 
-        # Execute next with underlying value as first argument
         base_val = self.value.value
         next_ch = rfunc(base_val, *args, **kwargs)
 
-        # Renumber ops in next_ch and compose
         renumbered = []
         for i, row in enumerate(next_ch.log_df, start=1):
             nr = dict(row)
             nr["ops_number"] = next_op - 1 + i
-            nr["lag_outcome"] = self.log_df[-1]["outcome"] if (self.log_df and i == 1) else (renumbered[-1]["outcome"] if renumbered else None)
+            nr["lag_outcome"] = (
+                self.log_df[-1]["outcome"] if (self.log_df and i == 1)
+                else (renumbered[-1]["outcome"] if renumbered else None)
+            )
             renumbered.append(nr)
 
         out = Chronicle(
             value=next_ch.value,
             log_df=self.log_df + renumbered,
-            lines=self._lines + next_ch.read_log(),
+            lines=self._lines + next_ch._lines,  # compose raw per-step lines
         )
         return out
 
@@ -129,19 +135,94 @@ def unveil(c: Chronicle, what: str = "value") -> Any:
     """
     unveil(chronicle, "value") -> underlying value or None
     unveil(chronicle, "log_df") -> list of dicts with detailed log rows
-    unveil(chronicle, "lines") -> printable log lines
+    unveil(chronicle, "lines") -> per-step printable log lines (no "Total")
     """
     if what == "value":
         return c.value.value if hasattr(c.value, "is_just") and c.value.is_just else None
     elif what == "log_df":
         return c.log_df
     elif what == "lines":
-        return c.read_log()
+        return list(c._lines)
     else:
         raise ValueError('what must be one of: "value", "log_df", "lines"')
 
-def read_log(c: Chronicle) -> List[str]:
-    return c.read_log()
+def read_log(c: Chronicle, style: str = "pretty") -> Union[List[str], Dict[str, Any], str, Any]:
+    """
+    Read and display the log of a chronicle in a chosen style.
+
+    style:
+      - "pretty": human-friendly lines with status, function, timestamps, runtimes, and inline messages for failures; includes a Total line
+      - "table": returns a pandas.DataFrame when pandas is available (with df.attrs['total_runtime_secs']),
+                 otherwise returns {'rows': [...], 'total_runtime_secs': float}
+      - "errors-only": only failed steps (or a single success message if none failed)
+    """
+    allowed = {"pretty", "table", "errors-only"}
+    if style not in allowed:
+        raise ValueError(f'style must be one of {sorted(allowed)}, got {style!r}')
+
+    rows = c.log_df or []
+    total = float(sum((r.get("run_time") or 0.0) for r in rows))
+
+    if style == "pretty":
+        lines: List[str] = []
+        for r in rows:
+            outcome = r.get("outcome", "")
+            ok = str(outcome).startswith("OK")
+            fn = r.get("function", "<unknown>")
+            started_at = r.get("start_time", "")
+            rt = float(r.get("run_time") or 0.0)
+            line = _format_log_line(ok, fn, started_at, rt)
+            msg = r.get("message")
+            if msg:
+                line += f" — {msg}"
+            lines.append(line)
+        lines.append(f"Total: {total:.3f} secs")
+        return lines
+
+    if style == "table":
+        table_rows: List[Dict[str, Any]] = []
+        for r in rows:
+            table_rows.append({
+                "ops_number": r.get("ops_number"),
+                "status": "OK" if str(r.get("outcome", "")).startswith("OK") else "NOK",
+                "function": r.get("function"),
+                "start_time": r.get("start_time"),
+                "end_time": r.get("end_time"),
+                "run_time_secs": float(r.get("run_time") or 0.0),
+                "message": r.get("message"),
+            })
+        if _PANDAS_AVAILABLE and _pd is not None:
+            df = _pd.DataFrame.from_records(table_rows, columns=[
+                "ops_number", "status", "function", "start_time", "end_time", "run_time_secs", "message"
+            ])
+            # Attach total runtime as DataFrame attribute (preserves original API idea)
+            try:
+                df.attrs["total_runtime_secs"] = total
+            except Exception:
+                # attrs may fail on very old pandas; ignore silently
+                pass
+            return df
+        else:
+            return {
+                "rows": table_rows,
+                "total_runtime_secs": total,
+            }
+
+    # errors-only
+    failed = [r for r in rows if not str(r.get("outcome", "")).startswith("OK")]
+    if not failed:
+        return f"All steps succeeded in {total:.3f} secs"
+    out_lines: List[str] = []
+    for r in failed:
+        fn = r.get("function", "<unknown>")
+        started_at = r.get("start_time", "")
+        rt = float(r.get("run_time") or 0.0)
+        line = _format_log_line(False, fn, started_at, rt)
+        msg = r.get("message")
+        if msg:
+            line += f" — {msg}"
+        out_lines.append(line)
+    return out_lines
 
 def check_g(c: Chronicle) -> List[Dict[str, Any]]:
     """
@@ -179,12 +260,10 @@ class RecordedFunction:
         self.fn_label = name or getattr(func, "__name__", "<anonymous>")
 
     def __call__(self, *args, **kwargs) -> Chronicle:
-        # Prepare inputs and timing
         started_at = _now_iso()
         t0 = time.perf_counter()
         input_repr = _safe_repr({"args": args, "kwargs": kwargs})
 
-        # Capture warnings and stdout "messages"
         warning_records: List[warnings.WarningMessage] = []
         stdout_buf = io.StringIO()
         value = None
@@ -226,7 +305,6 @@ class RecordedFunction:
             try:
                 g_val = self.g(value)
             except Exception as e:  # noqa: BLE001
-                # Don't fail the step because inspector failed; record inspector error as message
                 g_val = f"<inspector error: {type(e).__name__}: {e}>"
 
         # Diff
@@ -264,7 +342,6 @@ class RecordedFunction:
         return chron
 
     def _call_signature_fallback(self, args, kwargs) -> str:
-        # Useful to display a readable function call on failure
         try:
             sig = inspect.signature(self.func)
             ba = sig.bind_partial(*args, **kwargs)

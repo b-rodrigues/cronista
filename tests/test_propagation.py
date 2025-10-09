@@ -42,8 +42,8 @@ def test_error_propagation_short_circuit():
     # Ensure the final step was not executed
     assert executed["count"] == 0
 
-    # Check printable log lines show the NOK entries for the failing and short-circuited steps
-    lines = read_log(out)
-    assert len(lines) == 4
-    assert lines[2].startswith("NOK")
-    assert lines[3].startswith("NOK")
+    # Pretty log includes two NOK lines and a Total line
+    lines = read_log(out, style="pretty")
+    assert any(ln.startswith("NOK") for ln in lines)
+    assert sum(1 for ln in lines if ln.startswith("NOK")) == 2
+    assert lines[-1].startswith("Total:")

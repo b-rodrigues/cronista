@@ -10,6 +10,7 @@ let
       mkdocs-material
       mkdocstrings-python
       numpy
+      pandas
       pytest
       talvez
       ;
@@ -17,6 +18,7 @@ let
 
   rpkgs = builtins.attrValues {
     inherit (pkgs.rPackages) 
+      chronicler
       maybe
       ;
   };
