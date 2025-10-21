@@ -123,5 +123,3 @@ for row in rows:
   functions and their logs, short-circuiting on `Nothing`.
 - The implementation mirrors chronicler’s vignettes and README; see the original
   docs for conceptual background on monads and the Maybe pattern.
-
-hello class
